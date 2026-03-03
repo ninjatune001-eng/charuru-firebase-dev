@@ -1,4 +1,4 @@
-import type { Auth } from "firebase/auth";
+﻿import type { Auth } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
 import {
@@ -27,7 +27,7 @@ export async function refreshAdminAuthz({
   const user = auth.currentUser;
   if (!user) throw new Error("not logged in");
 
-  const staffSnap = await getDoc(doc(db, "admin", "staff", user.uid));
+  const staffSnap = await getDoc(doc(db, "admin_staff", user.uid));
   const staff = staffSnap.exists() ? (staffSnap.data() as StaffDoc) : null;
 
   const authz = authzFromStaffDoc(staff);
@@ -47,7 +47,7 @@ export async function ensureAdminCapability(
 ): Promise<AuthzState> {
   const authz = await ensureAdminAuthz(params);
   if (!hasCapability(authz, params.capability)) {
-    throw new Error(`権限がありません（${params.capability} が必要）`);
+    throw new Error("Missing capability: " + params.capability);
   }
   return authz;
 }
