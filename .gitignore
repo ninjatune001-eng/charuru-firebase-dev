@@ -83,3 +83,4 @@ emulator-data/
 
 # Editor/backup files
 *.bak
+/emulator-data/
