@@ -1,0 +1,64 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function staffPath() {
+      return /databases/$(database)/documents/admin_staff/$(request.auth.uid);
+    }
+
+    function staffExists() {
+      return isSignedIn() && exists(staffPath());
+    }
+
+    function staffDoc() {
+      return get(staffPath());
+    }
+
+    // ログイン済み && admin_staff/{uid} が存在 && disabled != true
+    function isActiveStaff() {
+      return staffExists()
+        && staffDoc().data.disabled != true;
+    }
+
+    match /_health/{docId} {
+      allow read, write: if true;
+    }
+
+    // ★ RBACソース：admin_staff/{uid}
+    // 本人の get のみ許可。list拒否。書き込み拒否（staff.manage は後で Functions 経由にする）
+    match /admin_staff/{uid} {
+      allow get: if isSignedIn() && request.auth.uid == uid;
+      allow list: if false;
+      allow create, update, delete: if false;
+    }
+
+    // ★ admin 配下は「読み取り(get)のみ」許可、直書き(create/update/delete)は禁止（Functions専用）
+    match /admin/{docId} {
+      allow get: if isActiveStaff();
+      allow list: if false;
+      allow create, update, delete: if false;
+
+      // admin のサブコレクション等も今は触らせない
+      match /{subpath=**} {
+        allow read, write: if false;
+      }
+    }
+
+    // Functionsが使うトップレベル（クライアントは触れない）
+    match /admin_idempotency/{docId} {
+      allow read, write: if false;
+    }
+    match /admin_audit_logs/{docId} {
+      allow read, write: if false;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
