@@ -1,4 +1,3 @@
-// admin-web/src/lib/ensureAdminAuthz.ts
 import type { Auth } from "firebase/auth";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase";
@@ -28,7 +27,7 @@ export async function refreshAdminAuthz({
   const user = auth.currentUser;
   if (!user) throw new Error("not logged in");
 
-  const staffSnap = await getDoc(doc(db, "admin_staff", user.uid));
+  const staffSnap = await getDoc(doc(db, "admin", "staff", user.uid));
   const staff = staffSnap.exists() ? (staffSnap.data() as StaffDoc) : null;
 
   const authz = authzFromStaffDoc(staff);
@@ -37,9 +36,7 @@ export async function refreshAdminAuthz({
   return { authz, staff, claims: { staff } };
 }
 
-export async function ensureAdminAuthz(
-  params: EnsureAdminParams
-): Promise<AuthzState> {
+export async function ensureAdminAuthz(params: EnsureAdminParams): Promise<AuthzState> {
   const { authz } = await refreshAdminAuthz(params);
   if (!authz.isAllowed) throw new Error(authz.message);
   return authz;

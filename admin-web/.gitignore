@@ -22,3 +22,13 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# build output
+/dist/
+
+# local env (do not commit)
+.env.local
+.env.*.local
+
+# editor/backup files
+*.bak
