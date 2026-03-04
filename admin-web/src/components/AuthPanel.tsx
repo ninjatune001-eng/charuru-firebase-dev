@@ -4,7 +4,6 @@ import type { User } from "firebase/auth";
 import { signInWithEmailAndPassword, signOut } from "firebase/auth";
 import { auth } from "../firebase";
 import { type AuthzState } from "../lib/authz";
-import { refreshAdminAuthz } from "../lib/ensureAdminAuthz";
 import { useAdminSession } from "../AdminSessionContext";
 
 export type AuthSession = {
@@ -53,13 +52,15 @@ export default function AuthPanel() {
 
     setBusy(true);
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      const u = cred.user;
+      const { user: u } = await signInWithEmailAndPassword(auth, email, password);
+      setSession((prev) => ({ ...prev, user: u }));
 
-      const { authz, claims } = await refreshAdminAuthz({ auth });
-
-      setSession({ user: u, authz });
-      setClaimsJson(JSON.stringify(claims, null, 2));
+      try {
+        const token = await u.getIdTokenResult(true);
+        setClaimsJson(JSON.stringify(token.claims, null, 2));
+      } catch {
+        setClaimsJson("");
+      }
     } catch (e: any) {
       setError(e?.message ?? "ログインに失敗しました");
       setSession({ user: null, authz: EMPTY_AUTHZ });
